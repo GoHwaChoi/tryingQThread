@@ -1,138 +1,164 @@
-#include "ScratchQThread.h"
+ï»¿#include "ScratchQThread.h"
 
 
 ScratchQThread::ScratchQThread(QWidget *parent)
     : QMainWindow(parent)
+	, ui(new Ui::ScratchQThreadClass)
 {
-    ui.setupUi(this);
-
-	//thread Å×½ºÆ®ÄÚµå
-	//we are linking the thread signal to the slot defined here
-	//connect(drwThread_dot, SIGNAL(calcDotAmount(float, float)), this, SLOT(setCalcAmount_dot(float, float)));
+    ui->setupUi(this);
 	
-	connect(ui.pushButton_Active, &QAbstractButton::clicked, this, &ScratchQThread::setThreadStart);	//Active ¹öÆ°À¸·Î ¾²·¹µå ½ÃÀÛ
-	connect(ui.pushButton_Control, &QAbstractButton::clicked, this, &ScratchQThread::setVolumeRandom);		//½½¶óÀÌ´õ·Î ¶óº§ °ª Ãâ·Â
-	connect(ui.horizontalSlider, &QSlider::valueChanged, this, &ScratchQThread::setVolumeSlider);
+	drwThread_dot = new drawingThread_dot(this, false);		//ì“°ë ˆë“œ1 ë™ì  ë©”ëª¨ë¦¬ í• ë‹¹: 1ì”© ì¦ê°€, ê°ì†Œí•˜ëŠ” ìˆ˜ë¥¼ ui í…ìŠ¤íŠ¸ë¡œ í‘œí˜„
+	drwThread_bar = new drawingThread_bar(this, false);		//ì“°ë ˆë“œ2 ë™ì  ë©”ëª¨ë¦¬ í• ë‹¹: ë‚œìˆ˜ ìƒì„± ë° ìŠ¬ë¼ì´ë” ì¡°ì‘ìœ¼ë¡œ ë³€ê²½ëœ ìˆ˜ë¥¼ ui í…ìŠ¤íŠ¸ë¡œ í‘œí˜„
+
+	//connect(drwThread_dot, SIGNAL(calcAmount_dot(int)), this, SLOT(setCalcAmount_dot(int)));
+	//connect(drwThread_dot, SIGNAL(finished()), drwThread_dot, SLOT(deleteLater()));
+
+	//connect(drwThread_bar, SIGNAL(calcAmount_bar(int)), this, SLOT(setCalcAmount_bar(int)));
+	//connect(drwThread_bar, SIGNAL(finished()), drwThread_bar, SLOT(deleteLater()));
+
+	connect(ui->pushButton_Active, &QAbstractButton::clicked, this, &ScratchQThread::setThreadStart);		//Active ë²„íŠ¼ìœ¼ë¡œ ì“°ë ˆë“œ ì‹œì‘
+	connect(ui->pushButton_Control, &QAbstractButton::clicked, this, &ScratchQThread::setVolumeRandom);		//ë‚œìˆ˜ ìƒì„±ëœ ê°’ìœ¼ë¡œ ë¼ë²¨ ë° ui ì¶œë ¥
+	connect(ui->horizontalSlider, &QSlider::valueChanged, this, &ScratchQThread::setVolumeSlider);			//ìŠ¬ë¼ì´ë” ì¡°ì‘ ê²°ê³¼ê°’ìœ¼ë¡œ ë¼ë²¨ ë° ui ì¶œë ¥
+	connect(ui->pushButton_exit, &QAbstractButton::clicked, this, &ScratchQThread::finishedGUI);
 }
 
-//ScratchQThread::~ScratchQThread()
-//{
-//	if (drwThread_dot)
-//	{
-//		drwThread_dot->stop();
-//		drwThread_dot->quit();
-//		drwThread_dot->wait();
-//	}
-//	drwThread_dot->wait();
-//}
+ScratchQThread::~ScratchQThread()
+{
+	//delete drwThread_dot;	//ì“°ë ˆë“œ1 ë©”ëª¨ë¦¬ ë°˜í™˜
+	//delete drwThread_bar;	//ì“°ë ˆë“œ2 ë©”ëª¨ë¦¬ ë°˜í™˜
+	delete ui;				//GUI ì“°ë ˆë“œ ë©”ëª¨ë¦¬ ë°˜í™˜
+}
+
+
 
 void ScratchQThread::setCalcAmount_bar(int _cal_Bar)
 {
 	QString strBar = "";
 	strBar.fill('|', _cal_Bar);
-	ui.textEdit_Control->setText(strBar);
-	ui.label_ControlNum->setText(QString::number(_cal_Bar));
+	ui->textEdit_Control->setText(strBar);
+	ui->label_ControlNum->setText(QString::number(_cal_Bar));
+}
+
+void ScratchQThread::closeEvent(QCloseEvent* event)
+{
+	event->ignore();
+}
+
+void ScratchQThread::finishedGUI()
+{
+	exit(EXIT_FAILURE);
+}
+
+void ScratchQThread::setVolumeSlider()
+{
+	//ìŠ¬ë¼ì´ë“œì˜ ê°’ì´ int í˜•ìœ¼ë¡œ ë°˜í™˜ë˜ë¯€ë¡œ QString ìœ¼ë¡œ ë³€í™˜í•˜ì—¬ ì €ì¥
+	unsigned int sliderNum = ui->horizontalSlider->value();
+	QString strVolumeVal = QString::number(sliderNum);
+
+	if (!ui->pushButton_Control->isChecked())		//control ë²„íŠ¼ì´ SliderBar ì¼ ë•Œ
+	{
+		ui->label_SliderNum->setText(strVolumeVal);	//ë¼ë²¨ì— ê°’ ì¶œë ¥
+
+		setCalcAmount_bar(sliderNum);				//Control textEdit ì— slider ê°’ ì „ë‹¬
+	}
 }
 
 void ScratchQThread::setVolumeRandom()
 {
 	
-	if (ui.pushButton_Control->isChecked())
+	if (ui->pushButton_Control->isChecked())		//control ë²„íŠ¼ì´ RandomBar ì¼ ë•Œ
 	{
 		
-		//initialize the thread
-		drwThread_bar = new drawingThread_dot(this);
-
-		//signal ÀÇ ¸Å°³º¯¼ö¿Í slot ÀÇ ¸Å°³º¯¼ö¸¦ µ¿ÀÏÇÏ°Ô ÇÏ¿© µ¥ÀÌÅÍ¸¦ ÁÖ°í¹ŞÀ½
+		drwThread_bar = new drawingThread_bar(this, false);		//ì“°ë ˆë“œ2 ë™ì  ë©”ëª¨ë¦¬ í• ë‹¹: ë‚œìˆ˜ ìƒì„± ë° ìŠ¬ë¼ì´ë” ì¡°ì‘ìœ¼ë¡œ ë³€ê²½ëœ ìˆ˜ë¥¼ ui í…ìŠ¤íŠ¸ë¡œ í‘œí˜„
+		//signal ì˜ ë§¤ê°œë³€ìˆ˜ì™€ slot ì˜ ë§¤ê°œë³€ìˆ˜ë¥¼ ë™ì¼í•˜ê²Œ í•˜ì—¬ ë°ì´í„°ë¥¼ ì£¼ê³ ë°›ìŒ
 		connect(drwThread_bar, SIGNAL(calcAmount_bar(int)), this, SLOT(setCalcAmount_bar(int)));
 
-		drwThread_bar->selectRandom();
+		drwThread_bar->selectRandom();				//ë‚œìˆ˜ ìƒì„± Flag ON
 		//start the thread
 		drwThread_bar->start();
 
-		ui.horizontalSlider->setDisabled(true);		//½½¶óÀÌ´õ Á¶ÀÛ ºñÈ°¼ºÈ­
-		ui.label_SliderNum->setText("Disabled");	//½½¶óÀÌ´õ ¶óº§¿¡ ºñÈ°¼º»óÅÂ Ç¥½Ã
+		ui->horizontalSlider->setDisabled(true);		//ìŠ¬ë¼ì´ë” ì¡°ì‘ ë¹„í™œì„±í™”
+		ui->label_SliderNum->setText("Disabled");	//ìŠ¬ë¼ì´ë” ë¼ë²¨ì— ë¹„í™œì„±ìƒíƒœ í‘œì‹œ
+
+		ui->pushButton_exit->setDisabled(true);		//ì“°ë ˆë“œ 2 êµ¬ë™ì¤‘ì—ëŠ” í”„ë¡œê·¸ë¨ ì¢…ë£Œ ëª»í•¨.
 
 		qDebug() << "pushButton_Control : Checked";
 	}
 	else
 	{
-		//¾²·¹µå°¡ ³¡³ª¸é(run() ÀÌ ³¡³ª¸é) °´Ã¼ Á¦°Å
-		connect(drwThread_bar, SIGNAL(finished()), drwThread_bar, SLOT(deleteLater()));
+		//ì“°ë ˆë“œê°€ ëë‚˜ë©´(run() ì´ ëë‚˜ë©´) ê°ì²´ ì œê±°
+		//connect(drwThread_bar, SIGNAL(finished()), drwThread_bar, SLOT(deleteLater()));
 
-		//while ¹® ÁßÁö
-		drwThread_bar->stop();
-		drwThread_bar->quit();
-		drwThread_bar->wait();
+		//while ë¬¸ ì¤‘ì§€
+		//drwThread_bar->stop();
+		drwThread_bar->Stop = true;
+		drwThread_bar->quit();			//ì“°ë ˆë“œ2 ì¤‘ì§€
+		drwThread_bar->wait();			//ì“°ë ˆë“œ2 ì•ˆì „ ì¢…ë£Œ
 
-		ui.textEdit_Control->clear();	//textEdit ¿¡ dot Á¦°Å
-		ui.label_ControlNum->clear();	//label ¿¡ dot °³¼ö Á¦°Å
+		ui->textEdit_Control->clear();	//textEdit ì— dot ì œê±°
+		ui->label_ControlNum->clear();	//label ì— dot ê°œìˆ˜ ì œê±°
 
-		ui.horizontalSlider->setEnabled(true);	//½½¶óÀÌ´õ Á¶ÀÛ È°¼ºÈ­
-		ui.label_SliderNum->setText("Enabled");	//½½¶óÀÌ´õ ¶óº§¿¡ È°¼º»óÅÂ Ç¥½Ã
+		ui->horizontalSlider->setEnabled(true);	//ìŠ¬ë¼ì´ë” ì¡°ì‘ í™œì„±í™”
+		ui->label_SliderNum->setText("Enabled");	//ìŠ¬ë¼ì´ë” ë¼ë²¨ì— í™œì„±ìƒíƒœ í‘œì‹œ
 
+		if (!ui->pushButton_Active->isChecked())
+		{
+			ui->pushButton_exit->setEnabled(true);		//ì“°ë ˆë“œ 2 ì¢…ë£Œë˜ì–´ exitë²„íŠ¼ í™œì„±í™”
+		}
 		qDebug() << "pushButton_Control : UnChecked";
 	}
 }
 
-void ScratchQThread::setVolumeSlider()
-{
-	//½½¶óÀÌµåÀÇ °ªÀÌ int ÇüÀ¸·Î ¹İÈ¯µÇ¹Ç·Î QString À¸·Î º¯È¯ÇÏ¿© ÀúÀå
-	unsigned int sliderNum = ui.horizontalSlider->value();
-	QString strVolumeVal = QString::number(sliderNum);
-
-	if (!ui.pushButton_Control->isChecked())
-	{
-		ui.label_SliderNum->setText(strVolumeVal);	//¶óº§¿¡ °ª Ãâ·Â
-
-		setCalcAmount_bar(sliderNum);		//Control textEdit ¿¡ slider °ª Àü´Ş
-	}	
-}
-
 void ScratchQThread::setCalcAmount_dot(int _cal_dot)
 {
-	QString strDot = "";			//¹®ÀÚ¿­ ÃÊ±âÈ­
-	strDot.fill('.', _cal_dot);		//¹®ÀÚ ' . ' À¸·Î Ã¤¿ö³Ö±â. _cal_dot ¼ö¸¸Å­
-	ui.textEdit_Active->setText(strDot);	//ui ¿¡ dot Ãâ·Â
+	QString strDot = "";			//ë¬¸ìì—´ ì´ˆê¸°í™”
+	strDot.fill('.', _cal_dot);		//ë¬¸ì ' . ' ìœ¼ë¡œ ì±„ì›Œë„£ê¸°. _cal_dot ìˆ˜ë§Œí¼
+	ui->textEdit_Active->setText(strDot);	//ui ì— dot ì¶œë ¥
 
-	ui.label_ActiveNum->setText(QString::number(_cal_dot));	//label ¿¡ dot °³¼ö Ãâ·Â
+	ui->label_ActiveNum->setText(QString::number(_cal_dot));	//label ì— dot ê°œìˆ˜ ì¶œë ¥
 }
 
 void ScratchQThread::setThreadStart()
 {
-	if (ui.pushButton_Active->isChecked())
+	if (ui->pushButton_Active->isChecked())
 	{
 		//initialize the thread
-		drwThread_dot = new drawingThread_dot(this);
-
-		//signal ÀÇ ¸Å°³º¯¼ö¿Í slot ÀÇ ¸Å°³º¯¼ö¸¦ µ¿ÀÏÇÏ°Ô ÇÏ¿© µ¥ÀÌÅÍ¸¦ ÁÖ°í¹ŞÀ½
+		drwThread_dot = new drawingThread_dot(this, false);		//ì“°ë ˆë“œ1 ë™ì  ë©”ëª¨ë¦¬ í• ë‹¹: 1ì”© ì¦ê°€, ê°ì†Œí•˜ëŠ” ìˆ˜ë¥¼ ui í…ìŠ¤íŠ¸ë¡œ í‘œí˜„
+		//signal ì˜ ë§¤ê°œë³€ìˆ˜ì™€ slot ì˜ ë§¤ê°œë³€ìˆ˜ë¥¼ ë™ì¼í•˜ê²Œ í•˜ì—¬ ë°ì´í„°ë¥¼ ì£¼ê³ ë°›ìŒ
 		connect(drwThread_dot, SIGNAL(calcAmount_dot(int)), this, SLOT(setCalcAmount_dot(int)));
 
 		//start the thread
 		drwThread_dot->start();
 
+		ui->pushButton_exit->setDisabled(true);		//ì“°ë ˆë“œ 1 êµ¬ë™ì¤‘ì—ëŠ” í”„ë¡œê·¸ë¨ ì¢…ë£Œ ëª»í•¨.
+
 		qDebug() << "pushButton_Active : Checked";
 	}
 	else
 	{	
-		//¾²·¹µå°¡ ³¡³ª¸é(run() ÀÌ ³¡³ª¸é) °´Ã¼ Á¦°Å
+		//ì“°ë ˆë“œê°€ ëë‚˜ë©´(run() ì´ ëë‚˜ë©´) ê°ì²´ ì œê±°
 		connect(drwThread_dot, SIGNAL(finished()), drwThread_dot, SLOT(deleteLater()));
 
-		//while ¹® ÁßÁö
-		drwThread_dot->stop();
+		//while ë¬¸ ì¤‘ì§€
+		//drwThread_dot->stop();
+		drwThread_dot->Stop = true;
 		drwThread_dot->quit();
 		drwThread_dot->wait();
 
-		ui.textEdit_Active->clear();	//textEdit ¿¡ dot Á¦°Å
-		ui.label_ActiveNum->clear();	//label ¿¡ dot °³¼ö Á¦°Å
+		ui->textEdit_Active->clear();	//textEdit ì— dot ì œê±°
+		ui->label_ActiveNum->clear();	//label ì— dot ê°œìˆ˜ ì œê±°
 
+		if (!ui->pushButton_Control->isChecked())
+		{
+			ui->pushButton_exit->setEnabled(true);		//ì“°ë ˆë“œ 1 ì¢…ë£Œë˜ì–´ exitë²„íŠ¼ í™œì„±í™”
+		}
 		qDebug() << "pushButton_Active : UnChecked";
 	}
 }
 
-//thread Å×½ºÆ®ÄÚµå
+//thread í…ŒìŠ¤íŠ¸ì½”ë“œ
 //void ScratchQThread::setCalcAmount_dot(float _cal_a, float _cal_b)
 //{
-//	ui.textEdit_Active->setText(QString::number(_cal_a));
-//	ui.textEdit_Control->setText(QString::number(_cal_b));
+//	ui->textEdit_Active->setText(QString::number(_cal_a));
+//	ui->textEdit_Control->setText(QString::number(_cal_b));
 //}
