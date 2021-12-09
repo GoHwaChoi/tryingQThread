@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="ScratchQThread">
+    <file>image/randombar.PNG</file>
+    <file>image/sliderbar.PNG</file>
+    <file>image/Active.PNG</file>
+    <file>image/Inactive.PNG</file>
+  </qresource>
+</RCC>
